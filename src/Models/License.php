@@ -6,12 +6,9 @@ use LimsPhp\Lims\Interfaces\LicenseInterface;
 
 class License implements LicenseInterface
 {
-    /** @var array */
-    protected $data;
-
-    public function __construct(array $data = [])
+    public function __construct(protected array $data = [])
     {
-        $this->data = $data;
+        //
     }
 
     public function __get(string $attribute)

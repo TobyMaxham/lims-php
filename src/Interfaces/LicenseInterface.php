@@ -33,6 +33,7 @@ namespace LimsPhp\Lims\Interfaces;
  * @property $additional_info
  * @property $training_activity_1
  * @property $training_activity_2
+ * @property $license_holder_uuid
  */
 interface LicenseInterface
 {

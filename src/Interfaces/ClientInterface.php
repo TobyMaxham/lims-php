@@ -8,7 +8,9 @@ interface ClientInterface
 
     public function lookup(array $params = []): array;
 
-    public function load(string $licenseNumberDOSB): ?LicenseInterface;
+    public function load(string $licenseNumberDOSB): LicenseInterface|null;
+
+    public function download(string $licenseNumberDOSB, string $format = 'dina4', $urlOnly = false): string|null;
 
     public function isDemo(): void;
 

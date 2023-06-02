@@ -3,7 +3,7 @@
 This PHP interface simplifies interaction with the DOSB LiMS API,
 serving as a convenient wrapper around its functionality.
 
-At the moment, the package supports loading and looking up licenses.
+At the moment, the package supports loading, looking up and downloading licenses.
 
 **Note: This package is not an official package from DOSB.**
 The package was developed by [TobyMaxham](https://github.com/TobyMaxham/) and is not affiliated with DOSB.
@@ -11,7 +11,7 @@ The package was developed by [TobyMaxham](https://github.com/TobyMaxham/) and is
 
 ## Requirements
 
-- PHP 7.4 or higher
+- PHP 8.0 or higher
 - ext-curl
 - ext-json
 
@@ -59,7 +59,19 @@ $license = $client->load('XXX-X-X-0123456');
 
 echo $license->firstname;
 echo $license->license_number_dosb;
+
+
+// Load the license print template (dina4 and card as PDF, signet as JPG)
+
+$pdf = $client->download('XXX-X-X-0123456');           // dina4
+$pdf = $client->download('XXX-X-X-0123456', 'card');
+$jpg = $client->download('XXX-X-X-0123456', 'signet');
+
+// Only the download URL
+$url = $client->download('XXX-X-X-0123456', 'dina4', true);
 ```
+
+An invalid download format throws a `LimsPhp\Lims\Exceptions\InvalidDownloadFormatException`.
 
 If the API does not respond with HTTP status 200, a
 `LimsPhp\Lims\Exceptions\InvalidApiResponse` is thrown.
