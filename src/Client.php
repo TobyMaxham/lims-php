@@ -6,28 +6,22 @@ use TobyMaxham\Lims\Models\License;
 use TobyMaxham\Lims\Interfaces\ClientInterface;
 use TobyMaxham\Lims\Interfaces\LicenseInterface;
 use TobyMaxham\Lims\Exceptions\InvalidApiResponse;
+use TobyMaxham\Lims\Exceptions\InvalidDownloadFormatException;
 
 class Client implements ClientInterface
 {
-    /** @var string */
-    private $username;
 
-    /** @var string */
-    private $password;
+    protected string $liveURI = 'https://wissensnetz.dosb.de/api/lims';
 
-    /** @var string */
-    protected $liveURI = 'https://wissensnetz.dosb.de/api/lims';
+    protected string $demoURI = 'https://demo-dosb.wissensnetz.eu/api/lims';
 
-    /** @var string */
-    protected $demoURI = 'https://demo-dosb.wissensnetz.eu/api/lims';
+    protected bool $isLive = true;
 
-    /** @var bool */
-    protected $isLive = true;
+    protected int $timeout = 30;
 
-    public function __construct(string $username, string $password)
+    public function __construct(private string $username, private string $password)
     {
-        $this->username = $username;
-        $this->password = $password;
+        //
     }
 
     public function isDemo(): void
@@ -48,12 +42,10 @@ class Client implements ClientInterface
             throw new InvalidApiResponse('No Licenses found in response');
         }
 
-        return array_map(function ($data) {
-            return new License($data);
-        }, $response['licenses']);
+        return array_map(fn ($data) => new License($data), $response['licenses']);
     }
 
-    public function load(string $licenseNumberDOSB): ?LicenseInterface
+    public function load(string $licenseNumberDOSB): LicenseInterface|null
     {
         $response = $this->callApi('/load/'.$licenseNumberDOSB);
         if (!isset($response)) {
@@ -61,6 +53,33 @@ class Client implements ClientInterface
         }
 
         return new License($response);
+    }
+
+
+    public function download(string $licenseNumberDOSB, string $format = 'dina4', $urlOnly = false): string|null
+    {
+        if (! in_array($format, ['dina4', 'card', 'signet',])) {
+            throw new InvalidDownloadFormatException($format);
+        }
+
+        $response = $this->callApi('/download/'.$licenseNumberDOSB, [
+            'format' => $format,
+            'file_url_only' => $urlOnly,
+        ], true);
+        if (!isset($response) || !isset($response['response'])) {
+            return null;
+        }
+
+        if (! $urlOnly) {
+            return $response['response'];
+        }
+
+        $download = json_decode($response['response'], true);
+        if (!isset($download['download_url'])) {
+            throw new InvalidApiResponse('Could not generate DownloadURL');
+        }
+
+        return $download['download_url'];
     }
 
     private function buildPath(string $path): string
@@ -72,11 +91,12 @@ class Client implements ClientInterface
         return $this->demoURI.$path;
     }
 
-    private function callApi(string $path, array $params = []): ?array
+    private function callApi(string $path, array $params = [], bool $isResource = false): array
     {
         $ch = curl_init($this->buildPath($path));
         curl_setopt($ch, CURLOPT_USERPWD, $this->username.":".$this->password);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Accept: application/json',
         ]);
@@ -90,6 +110,12 @@ class Client implements ClientInterface
 
         if (200 !== $httpCode) {
             throw new InvalidApiResponse('Invalid HTTP status code: '.$httpCode);
+        }
+
+        if ($isResource) {
+            return [
+                'response' => $output,
+            ];
         }
 
         return json_decode($output, true);
