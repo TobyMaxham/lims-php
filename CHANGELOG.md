@@ -2,6 +2,16 @@
 
 All notable changes to `lims-php/client` will be documented in this file
 
+## 2.0.0 - 2024-03-30
+
+- Complete rewrite using guzzlehttp/guzzle instead of cURL
+- Requires PHP 8.1 or higher
+- Add `create()`, `correct()` and `extend()` (endpoint `/request`) and `delete()`
+- `lookup()` uses named parameters instead of an array
+- Models `License`, `CreatedLicense`, `UpdatedLicense` and `DeletedLicense`
+- Separate exceptions per HTTP status code (401, 403, 404, 406, 422)
+- `download()` is not available in this version
+
 ## 1.2.0 - 2023-06-03
 
 - Requires PHP 8.0 or higher

@@ -2,7 +2,7 @@
 
 namespace LimsPhp\Lims\Exceptions;
 
-class InvalidApiResponse extends \Exception
+class NotFoundException extends \Exception
 {
 
 }
