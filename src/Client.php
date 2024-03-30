@@ -1,123 +1,309 @@
 <?php
 
-namespace TobyMaxham\Lims;
+namespace TobiasMaxham\PhpLims;
 
-use TobyMaxham\Lims\Models\License;
-use TobyMaxham\Lims\Interfaces\ClientInterface;
-use TobyMaxham\Lims\Interfaces\LicenseInterface;
-use TobyMaxham\Lims\Exceptions\InvalidApiResponse;
-use TobyMaxham\Lims\Exceptions\InvalidDownloadFormatException;
+use TobiasMaxham\PhpLims\Models\License;
+use GuzzleHttp\Exception\GuzzleException;
+use TobiasMaxham\PhpLims\Models\DeletedLicense;
+use TobiasMaxham\PhpLims\Models\UpdatedLicense;
+use TobiasMaxham\PhpLims\Models\CreatedLicense;
+use TobiasMaxham\PhpLims\Exceptions\NotFoundException;
+use TobiasMaxham\PhpLims\Exceptions\NotAcceptableException;
+use TobiasMaxham\PhpLims\Exceptions\UnauthorizedException;
+use TobiasMaxham\PhpLims\Exceptions\AccessDeniedException;
+use TobiasMaxham\PhpLims\Exceptions\InvalidResponseException;
+use TobiasMaxham\PhpLims\Exceptions\InvalidInputDataException;
+use TobiasMaxham\PhpLims\Exceptions\UnprocessableEntityException;
 
-class Client implements ClientInterface
+class Client
 {
+    private string $apiEndpoint = 'https://wissensnetz.dosb.de/api/lims';
 
-    protected string $liveURI = 'https://wissensnetz.dosb.de/api/lims';
+    private string $testApiEndpoint = 'https://demo-dosb.wissensnetz.eu/api/lims';
 
-    protected string $demoURI = 'https://demo-dosb.wissensnetz.eu/api/lims';
+    private bool $testmode = false;
 
-    protected bool $isLive = true;
+    private null|int $organizationId = null;
 
-    protected int $timeout = 30;
+    private \GuzzleHttp\Client $guzzleClient;
 
     public function __construct(private string $username, private string $password)
     {
-        //
-    }
-
-    public function isDemo(): void
-    {
-        $this->isLive = false;
-    }
-
-    public function isLive(): void
-    {
-        $this->isLive = true;
-    }
-
-    public function lookup(array $params = []): array
-    {
-        $response = $this->callApi('/lookup', $params);
-
-        if (!isset($response['licenses'])) {
-            throw new InvalidApiResponse('No Licenses found in response');
-        }
-
-        return array_map(fn ($data) => new License($data), $response['licenses']);
-    }
-
-    public function load(string $licenseNumberDOSB): LicenseInterface|null
-    {
-        $response = $this->callApi('/load/'.$licenseNumberDOSB);
-        if (!isset($response)) {
-            return null;
-        }
-
-        return new License($response);
-    }
-
-
-    public function download(string $licenseNumberDOSB, string $format = 'dina4', $urlOnly = false): string|null
-    {
-        if (! in_array($format, ['dina4', 'card', 'signet',])) {
-            throw new InvalidDownloadFormatException($format);
-        }
-
-        $response = $this->callApi('/download/'.$licenseNumberDOSB, [
-            'format' => $format,
-            'file_url_only' => $urlOnly,
-        ], true);
-        if (!isset($response) || !isset($response['response'])) {
-            return null;
-        }
-
-        if (! $urlOnly) {
-            return $response['response'];
-        }
-
-        $download = json_decode($response['response'], true);
-        if (!isset($download['download_url'])) {
-            throw new InvalidApiResponse('Could not generate DownloadURL');
-        }
-
-        return $download['download_url'];
-    }
-
-    private function buildPath(string $path): string
-    {
-        if ($this->isLive) {
-            return $this->liveURI.$path;
-        }
-
-        return $this->demoURI.$path;
-    }
-
-    private function callApi(string $path, array $params = [], bool $isResource = false): array
-    {
-        $ch = curl_init($this->buildPath($path));
-        curl_setopt($ch, CURLOPT_USERPWD, $this->username.":".$this->password);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Accept: application/json',
+        $this->guzzleClient = new \GuzzleHttp\Client([
+            'headers' => [
+                'Accept'        => 'application/json',
+                'Authorization' => 'Basic '.base64_encode($this->username.':'.$this->password),
+                'Content-Type'  => 'application/json',
+            ],
         ]);
+    }
 
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-        curl_setopt($ch, CURLOPT_POST, true);
-
-        $output = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if (200 !== $httpCode) {
-            throw new InvalidApiResponse('Invalid HTTP status code: '.$httpCode);
+    /**
+     * @throws InvalidResponseException|InvalidInputDataException
+     */
+    public function create(array $license): CreatedLicense
+    {
+        if (isset($license['license_number_dosb']) || isset($license['lid'])) {
+            throw new InvalidInputDataException('You can not create a license with an existing license number or lid');
         }
 
-        if ($isResource) {
-            return [
-                'response' => $output,
-            ];
+        return $this->request($license);
+    }
+
+    /**
+     * @throws InvalidResponseException
+     * @throws InvalidInputDataException
+     * @throws UnauthorizedException
+     * @throws NotAcceptableException
+     * @throws UnprocessableEntityException
+     * @throws AccessDeniedException
+     * @throws NotFoundException
+     */
+    public function correct(array $license, int|string $id = null): UpdatedLicense
+    {
+        if(isset($license['organisation_id'])) {
+            throw new InvalidInputDataException('You can not correct an organisation_id');
         }
 
-        return json_decode($output, true);
+        if ($id) {
+            $license[is_numeric($id) ? 'lid' : 'license_number_dosb'] = $id;
+        }
+        if (!isset($license['license_number_dosb']) && !isset($license['lid'])) {
+            throw new InvalidInputDataException('You must provide a license number or lid to correct a license');
+        }
+
+        return $this->request($license);
+    }
+
+    /**
+     * @throws InvalidResponseException
+     * @throws InvalidInputDataException
+     * @throws UnauthorizedException
+     * @throws NotAcceptableException
+     * @throws UnprocessableEntityException
+     * @throws AccessDeniedException
+     * @throws NotFoundException
+     */
+    public function extend(array $license, int|string $id = null): UpdatedLicense
+    {
+        if(isset($license['organisation_id'])) {
+            throw new InvalidInputDataException('You can not correct an `organisation_id`');
+        }
+        if(isset($license['first_issue_date'])) {
+            throw new InvalidInputDataException('You can not correct an `first_issue_date`');
+        }
+        if(isset($license['training_course_id'])) {
+            throw new InvalidInputDataException('You can not correct an `training_course_id`');
+        }
+
+        if ($id) {
+            $license[is_numeric($id) ? 'lid' : 'license_number_dosb'] = $id;
+        }
+        if (!isset($license['license_number_dosb']) && !isset($license['lid'])) {
+            throw new InvalidInputDataException('You must provide a license number or lid to correct a license');
+        }
+
+        return $this->request($license);
+    }
+
+    /**
+     * @throws UnprocessableEntityException
+     * @throws InvalidResponseException
+     * @throws AccessDeniedException
+     * @throws UnauthorizedException
+     * @throws NotAcceptableException
+     * @throws NotFoundException
+     */
+    protected function request(array $license): CreatedLicense|UpdatedLicense
+    {
+        // nullable|empty
+        // custom_1
+        // custom_2
+        // additional_info
+        // training_activity_1
+        // training_activity_2
+
+        $response = $this->doRequest('POST',
+            vsprintf('%s/request', [
+                $this->endpoint(),
+            ]),
+            [
+                'json' => $license,
+            ]
+        );
+
+
+        $newLicense = json_decode($response, true);
+
+        if (json_last_error() != JSON_ERROR_NONE || empty($newLicense)) {
+            throw new InvalidResponseException('Invalid response from LiMS API');
+        }
+
+        if (isset($license['license_number_dosb']) || isset($license['lid'])) {
+            return new UpdatedLicense($newLicense);
+        }
+
+        return new CreatedLicense($newLicense);
+    }
+
+    public function load(string $licenseNumberDosb)
+    {
+        $response = $this->doRequest('POST',
+            vsprintf('%s/load/%s', [
+                $this->endpoint(),
+                urlencode($licenseNumberDosb),
+            ])
+        );
+
+
+        $license = json_decode($response, true);
+
+        if (json_last_error() != JSON_ERROR_NONE || empty($license)) {
+            throw new InvalidResponseException('Invalid response from LiMS API');
+        }
+
+        return new License($license);
+    }
+
+    public function lookup(
+        int $organisationId = null,
+        int $offset = null,
+        int $limit = null,
+        bool $validationStatus = null,
+        bool $isObscured = null,
+        bool $idsOnly = null,
+        bool $licenseNumberOrganisation = null
+    ) {
+        $options = [];
+        if ($organisationId > 0) {
+            $options['json']['organisation_id'] = $organisationId;
+        }
+
+        if (is_int($offset) && $offset >= 0) {
+            $options['json']['offset'] = $offset;
+        }
+
+        if ($limit > 0) {
+            $options['json']['limit'] = $limit;
+        }
+
+        if (is_bool($validationStatus)) {
+            $options['json']['validation_status'] = $validationStatus;
+        }
+
+        if (is_bool($isObscured)) {
+            $options['json']['is_obscured'] = $isObscured;
+        }
+
+        if (is_bool($idsOnly)) {
+            $options['json']['ids_only'] = $idsOnly;
+        }
+
+        if (is_bool($licenseNumberOrganisation)) {
+            $options['json']['license_number_organisation'] = $licenseNumberOrganisation;
+        }
+
+        $response = $this->doRequest('POST',
+            vsprintf('%s/lookup', [
+                $this->endpoint(),
+            ]), $options
+        );
+
+        $result = json_decode($response, true);
+        if (json_last_error() != JSON_ERROR_NONE || empty($result) || !isset($result['licenses'])) {
+            throw new InvalidResponseException('Invalid response from LiMS API');
+        }
+
+        if (empty($result['licenses'])) {
+            return [];
+        }
+
+        if ($idsOnly) {
+            return $result['licenses'];
+        }
+
+        return array_map(fn ($license) => new License($license), $result['licenses']);
+    }
+
+    public function delete(string $licenseNumberDosb): DeletedLicense
+    {
+        $response = $this->doRequest('POST',
+            vsprintf('%s/delete/%s', [
+                $this->endpoint(),
+                urlencode($licenseNumberDosb),
+            ])
+        );
+
+
+        $deleted = json_decode($response, true);
+
+        if (json_last_error() != JSON_ERROR_NONE || empty($deleted)) {
+            throw new InvalidResponseException('Invalid response from LiMS API');
+        }
+
+        return new DeletedLicense($deleted);
+    }
+
+    private function doRequest(string $method, string $uri, array $options = []): string
+    {
+        try {
+            $response = $this->guzzleClient->request($method, $uri, $options);
+        } catch (GuzzleException $e) {
+
+            $message = null;
+            if ($e->hasResponse()) {
+                $message = $e->getResponse()?->getBody()?->getContents();
+                if (!empty($message)) {
+                    $json = json_decode($message, true);
+
+                    if (json_last_error() == JSON_ERROR_NONE && !empty($json)) {
+                        $message = implode(' | ', $json);
+                    }
+                }
+            }
+
+            /**
+             * Predefined Exceptions from LiMS API (https://gitlab.ghostthinker.de/pub/lims_connect)
+             */
+
+            // 401 Unauthorized
+            if ($e->getCode() === 401) {
+                throw new UnauthorizedException($message, 401);
+            }
+
+            // 403 Access Denied
+            if ($e->getCode() === 403) {
+                throw new AccessDeniedException($message, 403);
+            }
+
+            // 404 Not Found
+            if ($e->getCode() === 404) {
+                throw new NotFoundException($message, 403);
+            }
+
+            // 406 Not Acceptable
+            if ($e->getCode() === 406) {
+                throw new NotAcceptableException($message, 406);
+            }
+
+            // 422 Unprocessable Entity
+            if ($e->getCode() === 422) {
+                throw new UnprocessableEntityException($message, 422);
+            }
+
+            throw new \Exception($e->getMessage(), $e->getCode(), $e);
+        }
+
+        return $response->getBody()->getContents();
+    }
+
+    private function endpoint(): string
+    {
+        return $this->testmode ? $this->testApiEndpoint : $this->apiEndpoint;
+    }
+
+    public function setTestMode(bool $testmode = true): void
+    {
+        $this->testmode = $testmode;
     }
 }

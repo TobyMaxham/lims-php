@@ -1,24 +1,23 @@
 {
-  "name": "tobymaxham/php-lims",
-  "description": "A PHP package for interacting with the LiMS API of DOSB",
-  "type": "library",
-  "license": "MIT",
-  "autoload": {
-    "psr-4": {
-      "TobyMaxham\\Lims\\": "src/"
+    "name": "tobias.maxham/php-lims",
+    "description": "A PHP package for interacting with the LiMS API of DOSB",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "TobiasMaxham\\PhpLims\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Tobias Maxham",
+            "email": "tobias.maxham@tricept.de",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "guzzlehttp/guzzle": "^7.0"
     }
-  },
-  "authors": [
-    {
-      "name": "TobyMaxham",
-      "email": "git@maxham.de",
-      "role": "Developer"
-    }
-  ],
-  "minimum-stability": "stable",
-  "require": {
-    "php": "^8.0",
-    "ext-curl": "*",
-    "ext-json": "*"
-  }
 }
