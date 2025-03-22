@@ -38,7 +38,6 @@ A copy of the (German) API documentation is included in [docs/lims-api.md](docs/
 
 Version 2 is a complete rewrite.
 `isDemo()` was replaced by `setTestMode()` and `lookup()` now uses named parameters instead of an array.
-`download()` is not available in this version yet.
 The cURL based version is still available as tag `v1.2.0`.
 
 
@@ -64,7 +63,8 @@ $client = new Client($username, $password);
 
 
 // Call to create or update a license.
-// Note: This Interface does not validate the input data. Please refer to the API documentation for the correct data format.
+// Note: This Interface does not fully validate the input data. Please refer to the API documentation for the correct data format.
+// The Interface will validate only the most common fields (e.g. some date fields, gender, etc.)
 
 /** @var \LimsPhp\Lims\Models\CreatedLicense $license */
 $license = $client->create($licenseData);  // Attributes: $license_number_dosb, $lid
@@ -92,6 +92,11 @@ $license = $client->lookup(organisationId: $organisationId, offset: $offset, lim
 $deletedLicense = $client->delete($licenseNumberDosb); // Attributes: $license_number_dosb, $lid
 
 
+// Load the license print template (PDF/JPG) or only its download URL.
+$file = $client->download($licenseNumberDosb, 'dina4');
+$url  = $client->download($licenseNumberDosb, 'card', urlOnly: true);
+
+
 // Request to transfer a license to another target association.
 // ...
 
@@ -106,7 +111,10 @@ Call to create or update a license.
 Endpoint: **/request** <br>
 Documentation: [#lizenz-anfordern](https://gitlab.ghostthinker.de/pub/lims_connect#lizenz-anfordern)
 
-The input data is not validated by the interface. Please refer to the API documentation for the correct data format.<br>
+The input data is validated before it is sent to the API. The interface only handles the most common fields
+(e.g. required fields, date fields as timestamps, gender `m`/`w`/`u`, e-mail). An invalid input throws a
+`LimsPhp\Lims\Exceptions\InvalidInputDataException`. The allowed age range for `birthdate`
+can be changed with `$client->setMinYears()` and `$client->setMaxYears()` (default 0 to 120 years).<br>
 There is a distinction between creating and updating a license. The `create` method generates a new license, while the `correct` and `extend` methods modify an existing one.<br>
 
 Currently, within the interface, there is no functional difference between `correct` and `extend`—both update the license. However, in the API endpoint, the distinction matters: if license data is included in your request, the license will be automatically extended.
@@ -147,10 +155,25 @@ $license = $client->extend([
 
 ### Downloading licenses
 
-Not yet implemented:
+Load the license print template based on the DOSB license number.
 
-/download
-/download_multiple
+Endpoint: **/download** <br>
+Formats: `dina4` and `card` are returned as PDF, `signet` as JPG.
+
+``` php
+// Raw file content (PDF/JPG)
+$pdf = $client->download('XXX-X-X-0123456');            // dina4
+$pdf = $client->download('XXX-X-X-0123456', 'card');
+$jpg = $client->download('XXX-X-X-0123456', 'signet');
+file_put_contents('license.pdf', $pdf);
+
+// Only the download URL
+$url = $client->download('XXX-X-X-0123456', 'dina4', urlOnly: true);
+```
+
+An invalid format throws a `LimsPhp\Lims\Exceptions\InvalidDownloadFormatException`.
+
+Not yet implemented: `/download_multiple`
 
 ### Migrating licenses
 

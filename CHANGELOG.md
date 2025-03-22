@@ -2,6 +2,17 @@
 
 All notable changes to `lims-php/client` will be documented in this file
 
+## 2.1.0 - 2025-03-22
+
+- Add input validation for `create()`, `correct()` and `extend()` (`LimsValidator`, `LicenseValidator`)
+- Add `setMinYears()` / `setMaxYears()` for the birthdate validation
+- Add `download()` again (`dina4`, `card`, `signet`, optionally only the download URL), it was missing since the 2.0 rewrite
+- Add `InvalidDownloadFormatException`
+- Add `license_holder_uuid` to the license model
+- Set a default request timeout of 30 seconds
+- Fix `NotFoundException` being thrown with status code 403 instead of 404
+- Update README
+
 ## 2.0.0 - 2024-03-30
 
 - Complete rewrite using guzzlehttp/guzzle instead of cURL
