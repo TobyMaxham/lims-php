@@ -7,12 +7,14 @@ use GuzzleHttp\Exception\GuzzleException;
 use TobiasMaxham\PhpLims\Models\DeletedLicense;
 use TobiasMaxham\PhpLims\Models\UpdatedLicense;
 use TobiasMaxham\PhpLims\Models\CreatedLicense;
+use TobiasMaxham\PhpLims\Support\LimsValidator;
 use TobiasMaxham\PhpLims\Exceptions\NotFoundException;
 use TobiasMaxham\PhpLims\Exceptions\NotAcceptableException;
 use TobiasMaxham\PhpLims\Exceptions\UnauthorizedException;
 use TobiasMaxham\PhpLims\Exceptions\AccessDeniedException;
 use TobiasMaxham\PhpLims\Exceptions\InvalidResponseException;
 use TobiasMaxham\PhpLims\Exceptions\InvalidInputDataException;
+use TobiasMaxham\PhpLims\Exceptions\InvalidDownloadFormatException;
 use TobiasMaxham\PhpLims\Exceptions\UnprocessableEntityException;
 
 class Client
@@ -27,9 +29,17 @@ class Client
 
     private \GuzzleHttp\Client $guzzleClient;
 
+    public int $minYears = 0;
+
+    public int $maxYears = 120;
+
+    private LimsValidator $validator;
+
     public function __construct(private string $username, private string $password)
     {
+        $this->validator = new LimsValidator($this);
         $this->guzzleClient = new \GuzzleHttp\Client([
+            'timeout' => 30,
             'headers' => [
                 'Accept'        => 'application/json',
                 'Authorization' => 'Basic '.base64_encode($this->username.':'.$this->password),
@@ -46,6 +56,8 @@ class Client
         if (isset($license['license_number_dosb']) || isset($license['lid'])) {
             throw new InvalidInputDataException('You can not create a license with an existing license number or lid');
         }
+
+        $this->validate($license, 'create');
 
         return $this->request($license);
     }
@@ -71,6 +83,8 @@ class Client
         if (!isset($license['license_number_dosb']) && !isset($license['lid'])) {
             throw new InvalidInputDataException('You must provide a license number or lid to correct a license');
         }
+
+        $this->validate($license, 'correct');
 
         return $this->request($license);
     }
@@ -103,7 +117,17 @@ class Client
             throw new InvalidInputDataException('You must provide a license number or lid to correct a license');
         }
 
+        $this->validate($license, 'extend');
+
         return $this->request($license);
+    }
+
+    /**
+     * @throws InvalidInputDataException
+     */
+    private function validate(array $license, string $type): void
+    {
+        $this->validator->validateRequest($license, $type);
     }
 
     /**
@@ -116,6 +140,10 @@ class Client
      */
     protected function request(array $license): CreatedLicense|UpdatedLicense
     {
+//        $validator = new LimsValidator();
+//        $this->validator->validateRequest($license);
+//        dd(345345345);
+
         // nullable|empty
         // custom_1
         // custom_2
@@ -244,6 +272,73 @@ class Client
         return new DeletedLicense($deleted);
     }
 
+    /**
+     * Load the license print template (dina4 and card as PDF, signet as JPG).
+     *
+     * Returns the raw file content, or only the download URL if $urlOnly is true.
+     *
+     * @throws InvalidDownloadFormatException
+     * @throws InvalidResponseException
+     * @throws UnauthorizedException
+     * @throws AccessDeniedException
+     * @throws NotFoundException
+     */
+    public function download(string $licenseNumberDosb, string $format = 'dina4', bool $urlOnly = false): string
+    {
+        if (!in_array($format, ['dina4', 'card', 'signet'], true)) {
+            throw new InvalidDownloadFormatException('Invalid download format: '.$format.' (allowed: dina4, card, signet)');
+        }
+
+        $data = ['format' => $format];
+        if ($urlOnly) {
+            $data['file_url_only'] = 1;
+        }
+
+        $response = $this->doRequest('POST',
+            vsprintf('%s/download/%s', [
+                $this->endpoint(),
+                urlencode($licenseNumberDosb),
+            ]),
+            [
+                'json' => $data,
+            ]
+        );
+
+        if (!$urlOnly) {
+            if ('' === $response) {
+                throw new InvalidResponseException('Empty download response from LiMS API');
+            }
+
+            return $response;
+        }
+
+        $download = json_decode($response, true);
+        if (json_last_error() != JSON_ERROR_NONE || empty($download['download_url'])) {
+            throw new InvalidResponseException('Could not generate download URL');
+        }
+
+        return $download['download_url'];
+    }
+
+    public function migrationRequest(string $licenseNumberDosb, int $organisationId)
+    {
+        dd('EXIT');
+        $response = $this->doRequest('POST',
+            vsprintf('%s/migration_request', [
+                $this->endpoint(),
+            ]),
+            [
+                'json' => [
+                    'license_number_dosb' => $licenseNumberDosb,
+                    'organisation_id'     => $organisationId,
+                ],
+            ]
+        );
+
+        dd($response);
+
+    }
+
     private function doRequest(string $method, string $uri, array $options = []): string
     {
         try {
@@ -278,7 +373,7 @@ class Client
 
             // 404 Not Found
             if ($e->getCode() === 404) {
-                throw new NotFoundException($message, 403);
+                throw new NotFoundException($message, 404);
             }
 
             // 406 Not Acceptable
@@ -305,5 +400,15 @@ class Client
     public function setTestMode(bool $testmode = true): void
     {
         $this->testmode = $testmode;
+    }
+
+    public function setMaxYears(int $year): void
+    {
+        $this->maxYears = $year;
+    }
+
+    public function setMinYears(int $year): void
+    {
+        $this->minYears = $year;
     }
 }

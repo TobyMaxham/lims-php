@@ -3,6 +3,7 @@
     "description": "A PHP package for interacting with the LiMS API of DOSB",
     "type": "library",
     "license": "MIT",
+    "keywords": ["dosb", "lims", "license", "api", "client"],
     "minimum-stability": "stable",
     "autoload": {
         "psr-4": {

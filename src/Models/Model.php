@@ -33,6 +33,7 @@ namespace TobiasMaxham\PhpLims\Models;
  * @property string $additional_info
  * @property string $training_activity_1
  * @property string $training_activity_2
+ * @property string $license_holder_uuid
  */
 abstract class Model
 {
