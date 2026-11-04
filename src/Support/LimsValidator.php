@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace TobiasMaxham\PhpLims\Support;
 
 use TobiasMaxham\PhpLims\Client;
@@ -9,9 +11,8 @@ class LimsValidator
 {
     private string $type;
 
-    public function __construct(private Client $client)
+    public function __construct(private readonly Client $client)
     {
-
     }
 
     /**
@@ -35,7 +36,7 @@ class LimsValidator
         }
 
         if (isset($license['honor_code_date']) && !is_int($license['honor_code_date'])) {
-            throw new InvalidInputDataException('Honor code date date must be a valid timestamp.');
+            throw new InvalidInputDataException('Honor code date must be a valid timestamp.');
         }
 
         if (isset($license['first_aid']) && (!is_bool($license['first_aid']) && !in_array($license['first_aid'],
@@ -46,7 +47,7 @@ class LimsValidator
         }
 
         if (isset($license['first_aid_date']) && !is_int($license['first_aid_date'])) {
-            throw new InvalidInputDataException('First aid date date must be a valid timestamp.');
+            throw new InvalidInputDataException('First aid date must be a valid timestamp.');
         }
 
         if (isset($license['license_number_organisation']) && empty($license['license_number_organisation'])) {
@@ -84,7 +85,8 @@ class LimsValidator
         $requiredFields = LicenseValidator::required($this->type);
 
         foreach ($requiredFields as $field) {
-            if (('create' === $this->type || isset($license[$field])) && ($license[$field] === '' || is_null($license[$field]))) {
+            $value = $license[$field] ?? null;
+            if (('create' === $this->type || array_key_exists($field, $license)) && ($value === '' || is_null($value))) {
                 throw new InvalidInputDataException('`'.$field.'` must not be empty.');
             }
         }

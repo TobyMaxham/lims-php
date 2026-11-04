@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace TobiasMaxham\PhpLims\Exceptions;
 
-class InvalidResponseException extends \Exception
+/**
+ * The API answered successfully, but the response could not be processed.
+ */
+class InvalidResponseException extends ApiException
 {
-
 }

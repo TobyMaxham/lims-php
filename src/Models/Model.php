@@ -1,47 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace TobiasMaxham\PhpLims\Models;
 
 /**
- * @property string $firstname
- * @property string $lastname
- * @property string $academic_title
- * @property int $birthdate
- * @property string $gender
- * @property string $street
- * @property string $postal
- * @property string $city
- * @property string $mail
- * @property string $phone
- * @property int $issue_date
- * @property int $first_issue_date
- * @property int $training_course_id
- * @property string $issue_place
- * @property int $valid_until
- * @property int $honor_code
- * @property int $honor_code_date
- * @property int $first_aid
- * @property int $first_aid_date
- * @property string $license_number_organisation
- * @property string $prequalification_type
- * @property string $prequalification_number
- * @property int $organisation_id
- * @property int $lid
- * @property string $license_number_dosb
- * @property string $custom_1
- * @property string $custom_2
- * @property string $additional_info
- * @property string $training_activity_1
- * @property string $training_activity_2
- * @property string $license_holder_uuid
+ * Base class for API resources. Attributes are accessible as properties.
  */
 abstract class Model
 {
+    /**
+     * Attribute casts. Date fields are unix timestamps and are cast to int.
+     * They are intentionally not converted to DateTime objects, because the
+     * API uses an unusual timezone handling for these values.
+     *
+     * @var array<string, 'int'|'float'|'bool'>
+     */
     protected array $casts = [];
 
+    /**
+     * @param array<string, mixed> $attributes
+     */
     public function __construct(private array $attributes = [])
     {
-        $this->processAttributes();
+        $this->castAttributes();
     }
 
     public function __get(string $name): mixed
@@ -49,31 +31,33 @@ abstract class Model
         return $this->attributes[$name] ?? null;
     }
 
-    private function processAttributes(): void
+    public function __isset(string $name): bool
+    {
+        return isset($this->attributes[$name]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return $this->attributes;
+    }
+
+    private function castAttributes(): void
     {
         foreach ($this->casts as $key => $type) {
-            if (array_key_exists($key, $this->attributes)) {
+            $value = $this->attributes[$key] ?? null;
 
-                if (null || empty($this->attributes[$key])) {
-                    continue;
-                }
-                if (0 === $this->attributes[$key]) {
-                    $this->attributes[$key] = 0;
-                    continue;
-                }
-
-                $this->attributes[$key] = match ($type) {
-                    'int' => (int) $this->attributes[$key],
-                    'float' => (float) $this->attributes[$key],
-                    'bool' => (bool) $this->attributes[$key],
-                    /*
-                     * Seems like the service uses a wired timezone for the dates.
-                     * So we won't use the DateTime object in this version.
-                     */
-//                    'datetime' => new \DateTime('@'.$this->attributes[$key]),
-                    default => $this->attributes[$key],
-                };
+            if ($value === null || $value === '') {
+                continue;
             }
+
+            $this->attributes[$key] = match ($type) {
+                'int' => (int) $value,
+                'float' => (float) $value,
+                'bool' => (bool) $value,
+            };
         }
     }
 }

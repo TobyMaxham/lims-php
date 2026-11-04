@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace TobiasMaxham\PhpLims\Exceptions;
 
-class UnprocessableEntityException extends \Exception
+/**
+ * 422 - the API rejected the submitted license data.
+ */
+class UnprocessableEntityException extends ApiException
 {
-
 }
