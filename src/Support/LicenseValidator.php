@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LimsPhp\Lims\Support;
 
 class LicenseValidator
 {
-    // Required not empty fields
+    /**
+     * Fields that must not be empty. For `create` all of them (except the ids) are required,
+     * for `correct` and `extend` they must not be empty if they are passed.
+     */
     private const REQUIRED_FIELDS = [
         'firstname',
         'lastname',
@@ -18,22 +23,17 @@ class LicenseValidator
         'issue_place',
         'honor_code',
         'first_aid',
-////        'license_number_organisation',
         'organisation_id',
         'lid',
         'license_number_dosb',
     ];
-    private const OPTIONAL_FIELDS = ['academic_title'];
 
     public static function required(string $type): array
     {
-        $fields = self::REQUIRED_FIELDS;
-        if ('create' == $type) {
-            $fields = array_diff($fields, ['lid', 'license_number_dosb']);
-
-            return $fields;
+        if ('create' === $type) {
+            return array_values(array_diff(self::REQUIRED_FIELDS, ['lid', 'license_number_dosb']));
         }
 
-        return $fields;
+        return self::REQUIRED_FIELDS;
     }
 }

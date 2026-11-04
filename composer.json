@@ -1,24 +1,49 @@
 {
     "name": "lims-php/client",
-    "description": "A PHP package for interacting with the LiMS API of DOSB",
+    "description": "Framework-agnostic PHP client for the LiMS API (license management) of the DOSB.",
     "type": "library",
     "license": "MIT",
-    "keywords": ["dosb", "lims", "license", "api", "client"],
-    "minimum-stability": "stable",
+    "keywords": ["dosb", "lims", "lizenz", "license", "bildungsnetz", "sport", "api", "client", "psr-18"],
+    "homepage": "https://github.com/TobyMaxham/lims-php",
+    "authors": [
+        {
+            "name": "TobyMaxham",
+            "email": "git@maxham.net",
+            "homepage": "https://github.com/TobyMaxham",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.1 || ^2.0"
+    },
+    "require-dev": {
+        "nyholm/psr7": "^1.8",
+        "phpunit/phpunit": "^12.0"
+    },
+    "suggest": {
+        "ext-curl": "Für den eingebauten HTTP-Client (Standard, wenn kein eigener PSR-18-Client übergeben wird).",
+        "php-http/discovery": "Erkennt automatisch einen bereits installierten PSR-18-Client (z. B. Guzzle, Symfony HttpClient)."
+    },
     "autoload": {
         "psr-4": {
             "LimsPhp\\Lims\\": "src/"
         }
     },
-    "authors": [
-        {
-            "name": "TobyMaxham",
-            "email": "git@maxham.net",
-            "role": "Developer"
+    "autoload-dev": {
+        "psr-4": {
+            "LimsPhp\\Lims\\Tests\\": "tests/"
         }
-    ],
-    "require": {
-        "php": ">=8.1",
-        "guzzlehttp/guzzle": "^7.0"
-    }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }

@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LimsPhp\Lims\Exceptions;
 
-class InvalidInputDataException extends \Exception
+/**
+ * The data passed to the client is invalid. No request was sent.
+ */
+class InvalidInputDataException extends LimsException
 {
-
 }

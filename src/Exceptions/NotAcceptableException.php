@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LimsPhp\Lims\Exceptions;
 
-class NotAcceptableException extends \Exception
+/**
+ * 406 - the request could not be processed.
+ */
+class NotAcceptableException extends ApiException
 {
-
 }

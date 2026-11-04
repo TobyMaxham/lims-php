@@ -1,9 +1,15 @@
 Dokumentation der LiMS Schnittstelle
 ====================================
 
+> Kopie der offiziellen Dokumentation, Stand: 26.10.2026. Quelle: PDF-Ausdruck der früheren GitLab-Seite
+> `pub/lims_connect`, verlinkt auf https://wissensnetz.dosb.de/schnellstart-lims-anbindung.
+> Maßgeblich ist immer die aktuelle Version im DOSB-Wissensnetz.
+>
+> Die im Text enthaltenen Links auf `gitlab.ghostthinker.de` stammen aus dem Original und sind nicht mehr erreichbar.
+
 ## Allgemeine Informationen
 
-Die LiMS Schnittstelle des DOSB Bildungsnetz ermöglicht Ihnen unter anderem Lizenzdaten aus Ihrem Bestandssystem in das LiMS zu importieren. Außedem können Sie
+Die LiMS Schnittstelle des DOSB Wissensnetz ermöglicht Ihnen unter anderem Lizenzdaten aus Ihrem Bestandssystem in das LiMS zu importieren. Außedem können Sie
 
 * neue Lizenzen anfordern,
 * vorhandene Lizenzen verlängern und korrigieren,
@@ -16,7 +22,7 @@ In der aktuellen Version 1.0 erfolgen die Anfragen via **REST**. *SOAP*, *WSDL* 
 
 ## Testumgebung und API Zugriff
 
-In der Testumgebung haben Sie Zugriff auf alle Lizenzdaten Ihrer Organisation und können diese verändern, ohne dass die produktiven Datenbestände davon betroffen sind. Wenn sie Zugriff auf die API und auf unsere Demo Umgebung (Sandbox) benötigen, kontaktieren sie uns einfach über die Supportformular des Bildungsnetzes (Benutzerkonto im Bildungsnetz erforderlich) oder alternativ per E-Mail an support@bildungsnetz.dosb.de. Unter *https://lims.ghostthinker.de* erhalten Sie weiterführende Informationen. Darunter sind von uns empfohlene REST-Clients und eine Beispielanfrage für die ersten Testanfragen an die LiMS-API.
+In der Demo-Umgebung haben Sie Zugriff auf alle Lizenzdaten Ihrer Organisation und können diese verändern, ohne dass die produktiven Datenbestände davon betroffen sind. Wenn sie Zugriff auf die API und auf unsere Demo-Umgebung (Sandbox) benötigen, kontaktieren sie uns einfach über die Supportformular des Wissensnetzes (Benutzerkonto im Wissensnetzes erforderlich) oder alternativ per E-Mail an support@bildungsnetz.dosb.de.
 
 
 ## Request Header und Authentifizierung
@@ -334,6 +340,246 @@ Die Felder bzw Bezeichnung sind die selben wie beim Anfordern einer Lizenz.
 **Content:** `["Access denied for user %username ]`
 
 
+### Abruf von Organisationen
+
+Abruf von Organisationen.
+
+**URL**
+
+/lookup_organisations
+
+**Method:**
+
+`POST`
+
+**URL Params**
+keine
+
+**Data Params für Organisations-Abruf**
+
+**Required:**
+keine
+
+**Optional:** `offset` , `limit` , `federal_state` , `organisation_parent_id`
+
+`offset` = Startwert der Abfrage
+`limit` = Anzahl der Organisationen für die Abfrage (max. 100)
+
+`federal_state` = Bundesland als String
+
+    Baden-Württemberg
+    Bayern
+    Berlin
+    Brandenburg
+    Bremen
+    Hamburg
+    Hessen
+    Mecklenburg-Vorpommern
+    Niedersachsen
+    Nordrhein-Westfalen
+    Rheinland-Pfalz
+    Saarland
+    Sachsen
+    Sachsen-Anhalt
+    Schleswig-Holstein
+    Thüringen
+    Bundesverband
+
+`organisation_parent_id` = nur die direkten Untergliederungen (erste Ebene!)
+
+`organisation_category` = Verbändegruppe (wir nutzen hier die Abkürzungen vor den | also z.B. SV)
+
+    SV|Spitzenverbände
+    LSB|Landessportbünde/-verbände
+    VmbA|Verbände mit besonderen Aufgaben
+    UG|Untergliederung
+
+
+### Abruf von DOSB-Ausbildungsgängen
+
+Abruf von DOSB-Ausbildungsgängen.
+
+**URL**
+
+/lookup_training_courses
+
+**Method:**
+
+`POST`
+
+**URL Params**
+keine
+
+**Data Params für Organisations-Abruf**
+
+**Required:**
+keine
+
+**Optional:** `offset` , `limit` , `federal_state` , `assigned_organisation_id` , `level` , `training_course` , `sport`
+
+`offset` = Startwert der Abfrage
+`limit` = Anzahl der Ausbildungsgänge für die Abfrage (max. 100)
+
+`federal_state` = Bundesland als String
+
+    Baden-Württemberg
+    Bayern
+    Berlin
+    Brandenburg
+    Bremen
+    Hamburg
+    Hessen
+    Mecklenburg-Vorpommern
+    Niedersachsen
+    Nordrhein-Westfalen
+    Rheinland-Pfalz
+    Saarland
+    Sachsen
+    Sachsen-Anhalt
+    Schleswig-Holstein
+    Thüringen
+    Bundesverband
+
+`assigned_organisation_id` = nur die direkte freigebene Organisation (erste Ebene!)
+
+`level` = Lizenzstufe
+
+`training_course` = Ausbildungsgang als String
+
+    T-A/B
+    T-A/L
+    T-B/B
+    T-B/L
+    T-C/B
+    T-C/L
+    ÜL-B
+    ÜL-B/P
+    ÜL-B/R
+    ÜL-C
+    VM-B
+    VM-C
+
+`sport` = Sportart als String (z.B. Basketball, Ju-Jutsu oder Fußball usw.)
+
+**Rückgabewerte**
+
+| Feld | Beschreibung | Typ |
+|---|---|---|
+| id | Ausbildungsgang Id | string |
+| title | Bezeichnung | string |
+| level | Lizenzstufe | int |
+| course | Ausbildungsgang | string |
+| sport | Sportart | string |
+| profile | Profil | string |
+| discipline | Disziplin | string |
+| focus | Schwerpunkt | string |
+| validity_period | Gültigkeitsdauer (Jahre) | int |
+
+
+### Statistiken von DOSB-Ausbildungsgängen
+
+Statistiken von DOSB-Ausbildungsgängen.
+
+**URL**
+
+/stats
+
+**Method:**
+
+`POST`
+
+**URL Params**
+keine
+
+**Data Params für Statistiken-Abruf**
+
+**Required:** `start_date` , `end_date`
+
+`start_date` = Startdatum der Abfrage (von)
+`end_date` = Enddatum der Abfrage (bis)
+
+**Optional:** `birthdate` , `postal` , `gender` , `training_course_id` , `training_course` , `level` , `sport` , `profile` , `focus` , `discipline` , `federal_state` , `organisation_id`
+
+`birthdate` = Integer 1-5 für die Altersgruppe (Relation zum Startdatum)
+
+    bis 18 = 1
+    19-26 = 2
+    27-40 = 3
+    41-60 = 4
+    über 60 = 5
+
+`postal` = Postleitzahl-Raum, erste drei Stellen (max. 3)
+
+`gender` = Buchstabe für Geschlecht
+
+    männlich = m
+    weiblich = w
+    unbekannt = u
+
+`training_course_id` = nur der DOSB-Ausbildungsgang (via Id)
+Dieser Filter sollte allein genutzt werden, mit weiteren Detail-Filtern (siehe nächste) in nicht korrekter Kombination könnten die Rückgabewerte bei 0 stehen.
+
+`training_course` = Ausbildungsgang als String
+
+    T-A/B
+    T-A/L
+    T-B/B
+    T-B/L
+    T-C/B
+    T-C/L
+    ÜL-B
+    ÜL-B/P
+    ÜL-B/R
+    ÜL-C
+    VM-B
+    VM-C
+    ...
+
+`level` = Lizenzstufe (Integer)
+
+`sport` = Sportart als String (z.B. Basketball, Ju-Jutsu oder Fußball usw.)
+
+`profile` = Profil als String
+
+`focus` = Fokus als String (z.B. Rennsport usw.)
+
+`discipline` = Disziplin als String (z.B. Rennsport usw.)
+
+`federal_state` = Bundesland als String
+
+    Baden-Württemberg
+    Bayern
+    Berlin
+    Brandenburg
+    Bremen
+    Hamburg
+    Hessen
+    Mecklenburg-Vorpommern
+    Niedersachsen
+    Nordrhein-Westfalen
+    Rheinland-Pfalz
+    Saarland
+    Sachsen
+    Sachsen-Anhalt
+    Schleswig-Holstein
+    Thüringen
+    Bundesverband
+
+`organisation_id` = nur die direkte ausstellende Organisation
+
+**Success Response:**
+
+**Code:** 200 <br />
+**Content-Type:** application/json <br />
+**Content:** ...
+
+Beispiel Rückgabewerte (als json)
+
+```
+{'T-B/L': {'new': {'m': 30, 'w': '30', 'u':10 }, 'extend': {'m': 30, 'w': '30', 'u':10 }, 'valid': {'m': 30, 'w': '30', 'u':10 }, ...}
+```
+
+
 ### Lizenz laden mit DOSB Lizenznummer ###
 ----
 Aufruf zu Laden aller Felder einer Lizenz anhand der DOSB Lizenznummer.
@@ -378,38 +624,38 @@ Diese Felder können beim Erstellen von Lizenzen ausgefüllt werden.
 
 Bitte beachten Sie, dass die Felder vom Typ "Date" als Unixzeit, also dem POSIX-Standard entsprechend (z.B. 497274993), übergeben werden müssen. Um auf Nummer sicher zu gehen, dass es zu keinem Winterzeitproblem kommt, sollten Sie eine Uhrzeit um 12:00Uhr Mittags wählen und nicht 00:00 Uhr.
 
-|  Feld | Beschreibung  | Typ  | input / min, max  |
-|---|---|---|---|
-| firstname  | Vorname   |  string |  1,255 |
-| lastname  |  Nachname |  string |   1,255|
-| academic_title*  | Titel  |  string | 1,255  |
-| birthdate | Geburtsdatum  | date  |  -, NOW |
-| gender | Geschlecht  | string  |  w,m,u |
-| street  | Straße  | string  | 1,255 |
-| postal  | PLZ  | string  | 5,8 - z.B. {12345}, {AB}-{12345} z.B. AT-1234 (Österreich) oder nach ISO-Norm-3166-1-alpha-2 z.B. GB-EC1A 1BB (Great Britain) |
-| city  | Ort  | string  | 1,255  |
-| mail*  | E-Mail  | string  | 1,255  |
-| phone*  | Telefon  | string  | 1,255  |
-| issue_date  | Ausstellungsdatum  | date  | s. Wertetabelle  |
-| first_issue_date*  | Erstausstellungsdatum  | date  | -, issue_date  |
-| training_course_id  | Ausbildungsgang  | int  |   |
-| issue_place  | Ausstellungsort  | string  | 1,255  |
-| valid_until*  | Gültig bis | date  | s. Wertetabelle  |
-| honor_code  | Ehrencodex  | int  | 1,0  |
-| honor_code_date*  | Ehrencodex Datum  | date  | -, NOW  |
-| first_aid  | Erste-Hilfe-Ausbildung  | int  | 1,0  |
-| first_aid_date*  | Erste-Hilfe-Ausbildung Datum  | date  | -, NOW  |
-| license_number_organisation  | Lizenznummer(Verband)  | string  | 1,255  |
-| prequalification_type*  | Vorqualifikationsart  | string  | 1,255 - z.B. DOSB, Anderer LSB, Bundeswehr, Bundespolizei, International, Sonstiges |
-| prequalification_number**  | DOSB-Lizenznummer Vorqualifikation  | string  | 1,255  |
-| organisation_id  | Auszustellender Verband | int  |  0,- |
-| lid  | LiMS ID  | int  |  0,- |
-| license_number_dosb | DOSB-Lizenznummer   | string  | 1,255  |
-| custom_1* | Zusatzfeld 1   | string  | 0,1024  |
-| custom_2* | Zusatzfeld 2   | string  | 0,1024  |
-| additional_info* | Ergänzungseintrag (wird auf der Lizenz ausgegeben) - Wichtig: Auf dem Lizenz-Vordruck wird dieser Wert auf 75 Zeichen gekürzt | string  | 0,1024  |
-| training_activity_1* | Fortbildungsmaßnahme 1 | string  | 0,127 |
-| training_activity_2* | Fortbildungsmaßnahme 2 | string  | 0,127 |
+| Feld                        | Beschreibung                                                                                                                  | Typ    | input / min, max                                                                                                              |
+|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------|
+| firstname                   | Vorname                                                                                                                       | string | 1,255                                                                                                                         |
+| lastname                    | Nachname                                                                                                                      | string | 1,255                                                                                                                         |
+| academic_title*             | Titel                                                                                                                         | string | 1,255                                                                                                                         |
+| birthdate                   | Geburtsdatum                                                                                                                  | date   | -, NOW                                                                                                                        |
+| gender                      | Geschlecht                                                                                                                    | string | w,m,u                                                                                                                         |
+| street                      | Straße                                                                                                                        | string | 1,255                                                                                                                         |
+| postal                      | PLZ                                                                                                                           | string | 5,8 - z.B. {12345}, {AB}-{12345} z.B. AT-1234 (Österreich) oder nach ISO-Norm-3166-1-alpha-2 z.B. GB-EC1A 1BB (Great Britain) |
+| city                        | Ort                                                                                                                           | string | 1,255                                                                                                                         |
+| mail*                       | E-Mail                                                                                                                        | string | 1,255                                                                                                                         |
+| phone*                      | Telefon                                                                                                                       | string | 1,255                                                                                                                         |
+| issue_date                  | Ausstellungsdatum                                                                                                             | date   | s. Wertetabelle                                                                                                               |
+| first_issue_date*           | Erstausstellungsdatum                                                                                                         | date   | -, issue_date                                                                                                                 |
+| training_course_id          | Ausbildungsgang                                                                                                               | int    |                                                                                                                               |
+| issue_place                 | Ausstellungsort                                                                                                               | string | 1,255                                                                                                                         |
+| valid_until*                | Gültig bis                                                                                                                    | date   | s. Wertetabelle                                                                                                               |
+| honor_code                  | Ehrencodex                                                                                                                    | int    | 1,0                                                                                                                           |
+| honor_code_date*            | Ehrencodex Datum                                                                                                              | date   | -, NOW                                                                                                                        |
+| first_aid                   | Erste-Hilfe-Ausbildung                                                                                                        | int    | 1,0                                                                                                                           |
+| first_aid_date*             | Erste-Hilfe-Ausbildung Datum                                                                                                  | date   | -, NOW                                                                                                                        |
+| license_number_organisation | Lizenznummer(Verband)                                                                                                         | string | 1,255                                                                                                                         |
+| prequalification_type*      | Vorqualifikationsart                                                                                                          | string | 1,255 - z.B. DOSB, Anderer LSB, Bundeswehr, Bundespolizei, International, Sonstiges                                           |
+| prequalification_number**   | DOSB-Lizenznummer Vorqualifikation                                                                                            | string | 1,255                                                                                                                         |
+| organisation_id             | Auszustellender Verband                                                                                                       | int    | 0,-                                                                                                                           |
+| lid                         | LiMS ID                                                                                                                       | int    | 0,-                                                                                                                           |
+| license_number_dosb         | DOSB-Lizenznummer                                                                                                             | string | 1,255                                                                                                                         |
+| custom_1*                   | Zusatzfeld 1                                                                                                                  | string | 0,1024                                                                                                                        |
+| custom_2*                   | Zusatzfeld 2                                                                                                                  | string | 0,1024                                                                                                                        |
+| additional_info*            | Ergänzungseintrag (wird auf der Lizenz ausgegeben) - Wichtig: Auf dem Lizenz-Vordruck wird dieser Wert auf 75 Zeichen gekürzt | string | 0,1024                                                                                                                        |
+| training_activity_1*        | Fortbildungsmaßnahme 1                                                                                                        | string | 0,127                                                                                                                         |
+| training_activity_2*        | Fortbildungsmaßnahme 2                                                                                                        | string | 0,127                                                                                                                         |
 
 \* Felder mit sind optional.
 
@@ -664,14 +910,14 @@ Bei Erfolg wird eine entsprechende Message (migration_status) zurückgegeben: <b
 5. Frage: Können diese nach Abschluss der Testphase wieder entfernt werden?
 * Antwort: Richtig. Das Test/Demosystem wird von zur Zeit zur Zeit wieder zurückgesetzt und damit die Beispieldaten automatisch weggeworfen.
 6. Frage: Beim Anlegen einer neuen Lizenz wird unter Lizenzdaten der „DOSB-Lizenz Ausbildungsgang“ erfasst. Werden die Ausbildungsgänge für jeden ausbildenden Verband, entsprechend der beim DOSB bestätigten Ausbildungskonzeptionen, vorgegeben oder arbeiten wir Ihnen diese zu?
-* Antwort: Die DOSB-Lizenz Ausbildungsgänge werden initial vom DOSB für die jeweilige Mitgliedsorganisation festgelegt. Spitzenverbände und natürlich auch Sie als LSB können dann für Ihre Untergliederung wiederum die Auswahl bei Bedarf weiter begrenzen. Dies geschiehet direkt beim Bearbeiten der jeweiligen Organisation im Bildungsnetz.
+* Antwort: Die DOSB-Lizenz Ausbildungsgänge werden initial vom DOSB für die jeweilige Mitgliedsorganisation festgelegt. Spitzenverbände und natürlich auch Sie als LSB können dann für Ihre Untergliederung wiederum die Auswahl bei Bedarf weiter begrenzen. Dies geschiehet direkt beim Bearbeiten der jeweiligen Organisation im Wissensnetz.
 7. Frage: Werden Falscheingaben (unplausible Zeiträume) bei der Gültigkeit der Lizenz vom System gefiltert
 * Antwort: Alle Daten werden wie in Spalte "input / min, max" unter https://gitlab.ghostthinker.de/gt/lims_connect#felddefinitionen vermerkt validiert. Dies betrifft insbesondere wichtige Zeiträume, wie Gültig bis.
 8. Frage: Wir möchten langfristig gesehen ausschließlich mit den DOSB-Lizenznummern arbeiten. Ist es möglich, Ihnen ein Script mit allen aktuell gültigen Lizenzen zur Verfügung zu stellen, um diese im LIMS mit einer DOSB-Lizenznummer auszustatten, die dann zurückgeschickt und automatisch im eigenen System hinterlegt werden?
 * Antwort: Dies können Sie sehr gerne über einen initialen Bestandsimport (hier ist das Erstausstellungsdatum = first_issue_date mitanzugeben) vornehmen. Dann erhalten Sie zu jeder Lizenz automatisch eine DOSB-Lizenznummer.
 9. Frage: 1.) Gibt es Ihrerseits eine Schnittstelle, über die wir von unserem System aus auf die Druckfunktion einer Lizenz zugreifen können?
 * Antwort: Genau diese Funktion bietet der zweite Aufruf "download" der Schnittstelle, siehe  https://gitlab.ghostthinker.de/gt/lims_connect#lizenzenvordruck-laden-mit-dosb-lizenznummer. Sie erhalten als Rückmeldung direkt die PDF als Datei.
-10. Frage: Wie ist ein initialer Import bestimmter Lizenzen aus unserem System möglich wäre, um für alle eine DOSB-Lizenznummer zu generieren. Kann ich hierfür einfach ein PHP-Script auf unserem Server erstellen, welches alle Lizenzen einmal aus der Datenbank aufruft und an das Bildungsnetz über die bekannte Schnittstelle sendet? Oder ist hierfür eine andere Importfunktion vorgesehen?
+10. Frage: Wie ist ein initialer Import bestimmter Lizenzen aus unserem System möglich wäre, um für alle eine DOSB-Lizenznummer zu generieren. Kann ich hierfür einfach ein PHP-Script auf unserem Server erstellen, welches alle Lizenzen einmal aus der Datenbank aufruft und an das Wissensnetz über die bekannte Schnittstelle sendet? Oder ist hierfür eine andere Importfunktion vorgesehen?
 * Antwort: Das können Sie direkt über den Aufuf "request" der Schnittstelle machen. Für den Bestandsdatenimport dann bitte das Erstausstellungsdatum (=first_issue_date) angeben.
 11. Frage: Welches Datum ist bei der Neuanlage einer Lizenz von Bedeutung?
 * Antwort: Das Feld Ausstellungsdatum = issue_date.
@@ -697,4 +943,4 @@ Bei Erfolg wird eine entsprechende Message (migration_status) zurückgegeben: <b
 * Das erreichen Sie indem Sie folgenden den Optionsparameter `CURLOPT_HTTP_VERSION` setzen
 * `curl_setopt($process, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);`
 
-Weitere FAQs und wichtige Infos https://bildungsnetz.dosb.de/schnellstart-lims-anbindung
+Weitere FAQs und wichtige Infos https://wissensnetz.dosb.de/schnellstart-lims-anbindung

@@ -1,0 +1,7 @@
+# Files that are not needed when installing the package via composer
+/.github            export-ignore
+/tests              export-ignore
+/docs               export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/phpunit.xml.dist   export-ignore
