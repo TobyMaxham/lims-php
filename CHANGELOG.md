@@ -2,6 +2,12 @@
 
 All notable changes to `lims-php/client` will be documented in this file
 
+## 3.0.1 - 2026-11-04
+
+- Require `psr/http-factory` 1.1 or higher, version 1.0 triggers deprecations on PHP 8.4 and newer
+- Fix the test suite with the lowest dependencies on PHP 8.4 and 8.5
+- Report all errors in the test suite independent of the local `php.ini`, only fail on deprecations of the package itself
+
 ## 3.0.0 - 2026-11-04
 
 ### Breaking changes
